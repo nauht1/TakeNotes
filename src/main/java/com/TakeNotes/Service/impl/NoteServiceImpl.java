@@ -91,4 +91,13 @@ public class NoteServiceImpl implements INoteService {
 
         return modelMapper.map(noteRepository.save(note), NoteModel.class);
     }
+
+    @Override
+    public String markNote(String id) {
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Note not found"));
+        note.setImportant(!note.isImportant());
+        noteRepository.save(note);
+        return "Success";
+    }
 }

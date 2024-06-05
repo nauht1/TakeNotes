@@ -45,4 +45,9 @@ public class NoteController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", null));
         }
     }
+
+    @PostMapping("/mark")
+    public ResponseEntity<String> markNote(@RequestParam("id") String id) {
+        return ResponseEntity.ok(noteService.markNote(id));
+    }
 }
