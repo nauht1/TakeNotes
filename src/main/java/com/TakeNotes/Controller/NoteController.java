@@ -31,4 +31,18 @@ public class NoteController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", null));
         }
     }
+
+    @PostMapping("/update")
+    public ResponseEntity<ResponseModel> updateNote(@RequestParam("id") String id,
+                                                    @ModelAttribute NoteModel noteModel,
+                                                    @RequestParam(value = "images", required = false) List<MultipartFile> images) {
+        try {
+            NoteModel updatedNote = noteService.updateNote(id, noteModel, images);
+            return ResponseEntity.ok(new ResponseModel(true, "Success!!", updatedNote));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", null));
+        }
+    }
 }

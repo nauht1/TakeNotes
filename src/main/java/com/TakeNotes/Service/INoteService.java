@@ -9,4 +9,5 @@ import java.util.List;
 
 public interface INoteService {
     NoteModel createNote(CreateNoteDTO noteDTO, List<MultipartFile> images) throws IOException;
+    NoteModel updateNote(String id, NoteModel noteDTO, List<MultipartFile> images) throws IOException;
 }
