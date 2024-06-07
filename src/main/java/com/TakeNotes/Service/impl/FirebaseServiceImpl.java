@@ -16,6 +16,13 @@ import java.util.UUID;
 
 @Service
 public class FirebaseServiceImpl implements IFirebaseService {
+
+    private static final String MAIN_FOLDER = "main/";
+    private static final String NOTE_FOLDER = "note/";
+    private static final String IMAGE_FOLDER = "image/";
+    private static final String INFO_FOLDER = "info/";
+    private static final String AVATAR_FOLDER = "avatar/";
+
     @Autowired
     private Storage firebaseStorage;
 
@@ -46,11 +53,46 @@ public class FirebaseServiceImpl implements IFirebaseService {
 
     @Override
     public void createUserFolder(String userId, String userName) {
+        String folderName = MAIN_FOLDER + userId + "-" + userName + "/";
+        Storage storage = firebaseStorage;
 
+        if (!isFolderExists(storage, folderName)) {
+            createFolder(storage, null, folderName);
+
+            // user/note
+            createFolder(storage, folderName, NOTE_FOLDER);
+
+            // user/note/image
+            createFolder(storage, folderName + NOTE_FOLDER, IMAGE_FOLDER);
+
+            // user/info
+            createFolder(storage, folderName, INFO_FOLDER);
+
+            // user/info/avatar
+            createFolder(storage, folderName + INFO_FOLDER, AVATAR_FOLDER);
+        }
     }
 
     @Override
     public void deleteFileFromFirebase(String filePath) {
+        if (filePath == null) {
+            return;
+        }
+        Storage storage = firebaseStorage;
+        BlobId blobId = BlobId.of(bucketName, filePath);
+        storage.delete(blobId);
+    }
 
+    private boolean isFolderExists(Storage storage, String folderName) {
+        BlobId blobId = BlobId.of(bucketName, folderName);
+        Blob blob = storage.get(blobId);
+        return blob != null;
+    }
+
+    private void createFolder(Storage storage, String parentFolder, String folderName) {
+        String fullPath = parentFolder + folderName + "/";
+        BlobId blobId = BlobId.of(bucketName, fullPath);
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("application/x-directory").build();
+        storage.create(blobInfo);
     }
 }
