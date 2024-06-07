@@ -1,6 +1,10 @@
 package com.TakeNotes.Service.impl;
 
+import com.TakeNotes.Document.User;
+import com.TakeNotes.Enum.Type;
+import com.TakeNotes.Repository.UserRepository;
 import com.TakeNotes.Service.IFirebaseService;
+import com.TakeNotes.Utils.SecurityUtils;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
@@ -26,23 +30,44 @@ public class FirebaseServiceImpl implements IFirebaseService {
     @Autowired
     private Storage firebaseStorage;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Value("${firebase.storage.bucket}")
     private String bucketName;
 
     @Override
-    public String uploadImageToFirebase(MultipartFile imageFile) throws IOException {
+    public String uploadImageToFirebase(MultipartFile imageFile, Type type) throws IOException {
         Storage storage = firebaseStorage;
+
+        User user = SecurityUtils.getCurrentUser(userRepository);
+        createUserFolder(user.getId(), user.getEmail());
 
         // Get file extension
         String originalFilename = imageFile.getOriginalFilename();
         assert originalFilename != null;
         String fileExtension = originalFilename.substring(originalFilename.lastIndexOf('.') + 1);
 
-        // Generate unique image name with original file extension
-        String imageName = UUID.randomUUID() + "." + fileExtension;
+        String imageName;
+        String folderName;
+
+        switch (type) {
+            case AVATAR:
+                imageName = "avatar_image" + "." + fileExtension;
+                folderName = MAIN_FOLDER + user.getId() + "-" + user.getEmail() + "/" + INFO_FOLDER + AVATAR_FOLDER;
+                break;
+            case NOTE:
+                imageName = UUID.randomUUID() + "." + fileExtension;
+                folderName = MAIN_FOLDER + user.getId() + "-" + user.getEmail() + "/" + NOTE_FOLDER + IMAGE_FOLDER;
+                break;
+            default:
+                imageName = null;
+                folderName = null;
+                break;
+        }
 
         // Upload image to bucket
-        BlobId blobId = BlobId.of(bucketName, imageName);
+        BlobId blobId = BlobId.of(bucketName, folderName + imageName);
 
         try (InputStream inputStream = imageFile.getInputStream()) {
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType(imageFile.getContentType()).build();

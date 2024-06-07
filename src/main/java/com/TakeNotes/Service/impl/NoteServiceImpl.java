@@ -2,6 +2,7 @@ package com.TakeNotes.Service.impl;
 
 import com.TakeNotes.Document.Note;
 import com.TakeNotes.Document.User;
+import com.TakeNotes.Enum.Type;
 import com.TakeNotes.Model.CreateNoteDTO;
 import com.TakeNotes.Model.NoteModel;
 import com.TakeNotes.Repository.NoteRepository;
@@ -37,14 +38,13 @@ public class NoteServiceImpl implements INoteService {
     @Override
     public NoteModel createNote(CreateNoteDTO noteDTO, List<MultipartFile> images) throws IOException {
         User user = SecurityUtils.getCurrentUser(userRepository);
-        firebaseService.createUserFolder(user.getId(), user.getEmail());
 
         Note note = modelMapper.map(noteDTO, Note.class);
         List<String> imageUrls = new ArrayList<>();
 
         if (images != null && !images.isEmpty()) {
             for (MultipartFile image : images) {
-                String imageUrl = firebaseService.uploadImageToFirebase(image);
+                String imageUrl = firebaseService.uploadImageToFirebase(image, Type.NOTE);
                 imageUrls.add(imageUrl);
             }
         }
@@ -73,7 +73,7 @@ public class NoteServiceImpl implements INoteService {
 
         if (images != null && !images.isEmpty()) {
             for (MultipartFile image : images) {
-                String imageUrl = firebaseService.uploadImageToFirebase(image);
+                String imageUrl = firebaseService.uploadImageToFirebase(image, Type.NOTE);
                 currentImageUrls.add(imageUrl);
             }
             note.setImage_urls(currentImageUrls);
