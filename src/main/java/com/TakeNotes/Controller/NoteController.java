@@ -1,5 +1,6 @@
 package com.TakeNotes.Controller;
 
+import com.TakeNotes.Document.Note;
 import com.TakeNotes.Model.CreateNoteDTO;
 import com.TakeNotes.Model.NoteModel;
 import com.TakeNotes.Model.ResponseModel;
@@ -33,7 +34,7 @@ public class NoteController {
     }
 
     @PostMapping("/update")
-    public ResponseEntity<ResponseModel> updateNote(@RequestParam("id") String id,
+    public ResponseEntity<ResponseModel> updateNote(@RequestParam(value = "id", required = false) String id,
                                                     @ModelAttribute NoteModel noteModel,
                                                     @RequestParam(value = "images", required = false) List<MultipartFile> images) {
         try {
@@ -49,5 +50,30 @@ public class NoteController {
     @PostMapping("/mark")
     public ResponseEntity<String> markNote(@RequestParam("id") String id) {
         return ResponseEntity.ok(noteService.markNote(id));
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<ResponseModel> getAllNotes() {
+        try {
+            List<NoteModel> notes = noteService.getAllNotes();
+            return ResponseEntity.ok(new ResponseModel(true, "Success!!", notes));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", null));
+        }
+    }
+    
+    @DeleteMapping("/image/delete")
+    public ResponseEntity<String> deleteImage(@RequestParam(value = "id") String id,
+                                              @RequestParam(value = "imageUrl") String imageUrl) {
+        try {
+            String res = noteService.deleteImage(id, imageUrl);
+            return ResponseEntity.ok(res);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete image URL from note");
+        }
     }
 }

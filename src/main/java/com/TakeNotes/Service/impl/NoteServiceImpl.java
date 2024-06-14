@@ -58,8 +58,15 @@ public class NoteServiceImpl implements INoteService {
     @Override
     public NoteModel updateNote(String id, NoteModel noteDTO, List<MultipartFile> images) throws IOException {
         User user = SecurityUtils.getCurrentUser(userRepository);
-        Note note = noteRepository.findById(id).
-                orElseThrow(() -> new RuntimeException("Note not found"));
+        Note note;
+
+        if (id == null || id.isEmpty()) {
+            note = new Note();
+            note.setUserId(user.getId());
+        } else {
+            note = noteRepository.findById(id).
+                    orElseThrow(() -> new RuntimeException("Note not found"));
+        }
 
         if (noteDTO.getTitle() != null) {
             note.setTitle(noteDTO.getTitle());
@@ -70,6 +77,9 @@ public class NoteServiceImpl implements INoteService {
         }
 
         List<String> currentImageUrls = note.getImage_urls();
+        if (currentImageUrls == null) {
+            currentImageUrls = new ArrayList<>();
+        }
 
         if (images != null && !images.isEmpty()) {
             for (MultipartFile image : images) {
@@ -78,8 +88,6 @@ public class NoteServiceImpl implements INoteService {
             }
             note.setImage_urls(currentImageUrls);
         }
-
-        note.setUserId(user.getId());
         note.setCreated(LocalDateTime.now());
 
         return modelMapper.map(noteRepository.save(note), NoteModel.class);
@@ -92,5 +100,35 @@ public class NoteServiceImpl implements INoteService {
         note.setImportant(!note.isImportant());
         noteRepository.save(note);
         return "Success";
+    }
+
+    @Override
+    public List<NoteModel> getAllNotes() {
+        User user = SecurityUtils.getCurrentUser(userRepository);
+
+        List<Note> notes = noteRepository.findAllByUserId(user.getId());
+        List<NoteModel> noteModels = new ArrayList<>();
+        notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
+        return noteModels;
+    }
+
+    @Override
+    public String deleteImage(String noteId, String imageUrl) {
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new RuntimeException("Note not found"));
+
+        List<String> imageUrls = note.getImage_urls();
+        if (imageUrls != null && imageUrls.contains(imageUrl)) {
+            imageUrls.remove(imageUrl);
+            note.setImage_urls(imageUrls);
+            noteRepository.save(note);
+
+            //delete image from firebase
+            firebaseService.deleteFileFromFirebase(imageUrl);
+
+            return "Image URL deleted from note";
+        } else {
+            throw new RuntimeException("Image URL not found in note");
+        }
     }
 }
