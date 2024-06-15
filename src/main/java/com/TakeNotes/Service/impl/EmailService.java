@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.io.UnsupportedEncodingException;
 
@@ -15,10 +17,14 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private TemplateEngine templateEngine;
+
     @Value("${spring.mail.username}")
     private String from;
 
-    private final String frontendDomain = "http://localhost:3000";
+    //private final String frontendDomain = "http://localhost:3000";
+    private final String frontendDomain = "https://take-notes-ui.vercel.app";
 
     private void sendMail(String to, String subject, String content) {
         MimeMessage message = mailSender.createMimeMessage();
@@ -42,13 +48,13 @@ public class EmailService {
 
         // use the Frontend domain when click on button in email body
         String verificationUrl = frontendDomain + "/verify?code=" + code;
-        String content = "<p>Dear user,</p>"
-                + "<p>Please click the link below to verify your registration:</p>"
-                + "<p><a href=\"" + verificationUrl + "\">Verify your account</a></p>"
-                + "<br>"
-                + "<p>TakeNotes Team</p>";
 
-        sendMail(email, subject, content);
+        Context context = new Context();
+        context.setVariable("verificationUrl", verificationUrl);
+
+        String htmlContent = templateEngine.process("email/email", context);
+
+        sendMail(email, subject, htmlContent);
     }
 
 }
