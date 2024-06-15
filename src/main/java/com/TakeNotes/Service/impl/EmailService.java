@@ -18,6 +18,8 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String from;
 
+    private final String frontendDomain = "http://localhost:3000";
+
     private void sendMail(String to, String subject, String content) {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
@@ -39,7 +41,7 @@ public class EmailService {
         String subject = "TakeNotes Verification";
 
         // use the Frontend domain when click on button in email body
-        String verificationUrl = "http://locahost:3000/verify?code=" + code;
+        String verificationUrl = frontendDomain + "/verify?code=" + code;
         String content = "<p>Dear user,</p>"
                 + "<p>Please click the link below to verify your registration:</p>"
                 + "<p><a href=\"" + verificationUrl + "\">Verify your account</a></p>"

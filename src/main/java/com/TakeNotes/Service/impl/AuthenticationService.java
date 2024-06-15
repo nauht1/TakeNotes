@@ -4,6 +4,7 @@ import com.TakeNotes.Document.Token;
 import com.TakeNotes.Document.User;
 import com.TakeNotes.Enum.Role;
 import com.TakeNotes.Enum.TokenType;
+import com.TakeNotes.Exception.ResourcesAlreadyExistException;
 import com.TakeNotes.Model.AuthRequest;
 import com.TakeNotes.Model.AuthResponse;
 import com.TakeNotes.Model.RegisterDTO;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class AuthenticationService {
@@ -46,8 +48,16 @@ public class AuthenticationService {
     private EmailService emailService;
 
     public RegisterResponse register(RegisterDTO registerDTO) {
+        // random 64bit verification code
         String verificationCode = RandomString.make(64);
 
+        // Find if user has registered yet ?
+        Optional<User> existUser = userRepository.findByEmail(registerDTO.getEmail());
+        if (existUser.isPresent()) {
+            throw new ResourcesAlreadyExistException("Email already exists");
+        }
+
+        // Save user
         var user = User.builder()
                 .email(registerDTO.getEmail())
                 .password(passwordEncoder.encode(registerDTO.getPassword()))
@@ -59,32 +69,48 @@ public class AuthenticationService {
                 .build();
 
         var savedUser = userRepository.save(user);
+
+        // Send email verification
         emailService.sendVerificationMail(user.getEmail(), user.getVerificationCode());
 
         return RegisterResponse.builder()
+                .message("Successfully registered")
                 .email(savedUser.getEmail())
+                .fullName(savedUser.getFullName())
                 .build();
     }
 
     public AuthResponse authenticate(AuthRequest authRequest) {
+        // Authenticate user
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        authRequest.getEmail(),
-                        authRequest.getPassword()
+                        authRequest.getEmail().trim(),
+                        authRequest.getPassword().trim()
                 )
         );
+        // Find if the user is existed?
         var user = userRepository.findByEmail(authRequest.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // Check if the user is enabled?
+        if (!user.isEnabled()) {
+            throw new IllegalStateException("User is not verified");
+        }
+
+        // Generate JWT and refresh tokens
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
+
         revokeAllUserTokens(user);
         saveUserToken(user, jwtToken);
+
         return AuthResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .build();
     }
 
+    // Save new token
     private void saveUserToken(User user, String jwtToken) {
         var token = Token.builder()
                 .userId(user.getId())
@@ -96,6 +122,7 @@ public class AuthenticationService {
         tokenRepository.save(token);
     }
 
+    // Revoke existing tokens and save the new token
     private void revokeAllUserTokens(User user) {
         var validUserTokens = tokenRepository.findAllValidTokenByUser(user.getId());
         if (validUserTokens.isEmpty())
@@ -107,6 +134,7 @@ public class AuthenticationService {
         tokenRepository.saveAll(validUserTokens);
     }
 
+    // Refresh user token by using available accessToken
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         final String refreshToken;
@@ -132,6 +160,7 @@ public class AuthenticationService {
         }
     }
 
+    // Verify code
     public String verifyCode(String code) {
         User user = userRepository.findByVerificationCode(code)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
