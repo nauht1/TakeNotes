@@ -7,12 +7,14 @@ import com.TakeNotes.Enum.TokenType;
 import com.TakeNotes.Model.AuthRequest;
 import com.TakeNotes.Model.AuthResponse;
 import com.TakeNotes.Model.RegisterDTO;
+import com.TakeNotes.Model.RegisterResponse;
 import com.TakeNotes.Repository.TokenRepository;
 import com.TakeNotes.Repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.HttpHeaders;
+import org.modelmapper.internal.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,22 +42,27 @@ public class AuthenticationService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    public AuthResponse register(RegisterDTO registerDTO) {
+    @Autowired
+    private EmailService emailService;
+
+    public RegisterResponse register(RegisterDTO registerDTO) {
+        String verificationCode = RandomString.make(64);
+
         var user = User.builder()
                 .email(registerDTO.getEmail())
                 .password(passwordEncoder.encode(registerDTO.getPassword()))
                 .fullName(registerDTO.getFullName())
+                .enabled(false)
+                .verificationCode(verificationCode)
                 .role(Role.USER)
                 .created(LocalDateTime.now())
                 .build();
 
         var savedUser = userRepository.save(user);
-        var jwtToken = jwtService.generateToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
-        saveUserToken(savedUser, jwtToken);
-        return AuthResponse.builder()
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
+        emailService.sendVerificationMail(user.getEmail(), user.getVerificationCode());
+
+        return RegisterResponse.builder()
+                .email(savedUser.getEmail())
                 .build();
     }
 
@@ -123,5 +130,19 @@ public class AuthenticationService {
                 new ObjectMapper().writeValue(response.getOutputStream(), authResponse);
             }
         }
+    }
+
+    public String verifyCode(String code) {
+        User user = userRepository.findByVerificationCode(code)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (user == null) {
+            return "Verification failed";
+        }
+
+        user.setEnabled(true);
+        user.setVerificationCode(null);
+        userRepository.save(user);
+        return "Verification successful";
     }
 }

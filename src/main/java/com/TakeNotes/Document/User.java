@@ -28,16 +28,20 @@ public class User implements UserDetails {
     private LocalDate birthday;
     private String avatar_url;
     private String phone;
+    private boolean enabled;
+    private String verificationCode;
     private Role role;
     private LocalDateTime created;
 
-    public User(String email, String password, String fullName, LocalDate birthday, String avatar_url, String phone, Role role, LocalDateTime created) {
+    public User(String email, String password, String fullName, LocalDate birthday, String avatar_url, String phone, boolean enabled, String verificationCode, Role role, LocalDateTime created) {
         this.email = email;
         this.password = password;
         this.fullName = fullName;
         this.birthday = birthday;
         this.avatar_url = avatar_url;
         this.phone = phone;
+        this.enabled = enabled;
+        this.verificationCode = verificationCode;
         this.role = role;
         this.created = LocalDateTime.now();
     }
