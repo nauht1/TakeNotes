@@ -63,7 +63,19 @@ public class NoteController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", null));
         }
     }
-    
+
+    @GetMapping("/all/trash")
+    public ResponseEntity<ResponseModel> getAllNotesInTrash() {
+        try {
+            List<NoteModel> notes = noteService.getAllNotesInTrash();
+            return ResponseEntity.ok(new ResponseModel(true, "Success!!", notes));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", null));
+        }
+    }
+
     @DeleteMapping("/image/delete")
     public ResponseEntity<String> deleteImage(@RequestParam(value = "id") String id,
                                               @RequestParam(value = "imageUrl") String imageUrl) {

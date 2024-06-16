@@ -12,6 +12,7 @@ public interface INoteService {
     NoteModel updateNote(String id, NoteModel noteDTO, List<MultipartFile> images) throws IOException;
     String markNote(String id);
     List<NoteModel> getAllNotes();
+    List<NoteModel> getAllNotesInTrash();
     String deleteImage(String noteId, String imageUrl);
     // Move to trash, or restore from trash
     String move(String noteId);

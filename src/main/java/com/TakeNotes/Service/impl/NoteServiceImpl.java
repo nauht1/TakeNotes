@@ -107,11 +107,22 @@ public class NoteServiceImpl implements INoteService {
     public List<NoteModel> getAllNotes() {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
-        List<Note> notes = noteRepository.findAllByUserId(user.getId());
+        List<Note> notes = noteRepository.findAllByUserIdAndActiveIsTrue(user.getId());
         List<NoteModel> noteModels = new ArrayList<>();
         notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
         return noteModels;
     }
+
+    @Override
+    public List<NoteModel> getAllNotesInTrash() {
+        User user = SecurityUtils.getCurrentUser(userRepository);
+
+        List<Note> notes = noteRepository.findAllByUserIdAndActiveIsFalse(user.getId());
+        List<NoteModel> noteModels = new ArrayList<>();
+        notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
+        return noteModels;
+    }
+
 
     @Override
     public String deleteImage(String noteId, String imageUrl) {

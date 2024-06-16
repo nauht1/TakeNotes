@@ -8,5 +8,6 @@ import java.util.List;
 
 @Repository
 public interface NoteRepository extends MongoRepository<Note, String> {
-    List<Note> findAllByUserId(String userId);
+    List<Note> findAllByUserIdAndActiveIsTrue(String userId);
+    List<Note> findAllByUserIdAndActiveIsFalse(String userId);
 }
