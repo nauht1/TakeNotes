@@ -22,6 +22,7 @@ public class Note {
     private List<String> image_urls;
     private boolean important;
     private LocalDateTime created;
+    private boolean active;
 
     public Note(String userId, String title, String content, List<String> image_urls, boolean important, LocalDateTime created) {
         this.userId = userId;

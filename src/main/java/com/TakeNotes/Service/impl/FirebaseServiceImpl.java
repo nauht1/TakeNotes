@@ -99,12 +99,20 @@ public class FirebaseServiceImpl implements IFirebaseService {
     }
 
     @Override
-    public void deleteFileFromFirebase(String filePath) {
-        if (filePath == null) {
+    public void deleteFileFromFirebase(String url) {
+        if (url == null) {
             return;
         }
+
+        // Extract the path part from the URL
+        String path = extractPathFromUrl(url);
+
+        if (path == null) {
+            return;
+        }
+
         Storage storage = firebaseStorage;
-        BlobId blobId = BlobId.of(bucketName, filePath);
+        BlobId blobId = BlobId.of(bucketName, path);
         storage.delete(blobId);
     }
 
@@ -119,5 +127,18 @@ public class FirebaseServiceImpl implements IFirebaseService {
         BlobId blobId = BlobId.of(bucketName, fullPath);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("application/x-directory").build();
         storage.create(blobInfo);
+    }
+
+    private String extractPathFromUrl(String url) {
+        try {
+            String[] parts = url.split("/o/");
+            if (parts.length > 1) {
+                String pathPart = parts[1].split("\\?")[0];
+                return java.net.URLDecoder.decode(pathPart, "UTF-8");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

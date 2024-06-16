@@ -18,4 +18,5 @@ public class NoteModel {
     private List<String> image_urls;
     private boolean important;
     private LocalDateTime created;
+    private boolean active;
 }

@@ -76,4 +76,14 @@ public class NoteController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to delete image URL from note");
         }
     }
+
+    @PostMapping("/move")
+    public ResponseEntity<String> moveOrRestore(@RequestParam(value = "id") String id) {
+        return ResponseEntity.ok(noteService.move(id));
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<String> deleteNote(@RequestParam(value = "id") String id) {
+        return ResponseEntity.ok(noteService.deleteNote(id));
+    }
 }

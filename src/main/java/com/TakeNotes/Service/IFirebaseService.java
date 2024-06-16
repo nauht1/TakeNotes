@@ -8,5 +8,5 @@ import java.io.IOException;
 public interface IFirebaseService {
     String uploadImageToFirebase(MultipartFile imageFile, Type type) throws IOException;
     void createUserFolder(String userId, String userName);
-    void deleteFileFromFirebase(String filePath);
+    void deleteFileFromFirebase(String url);
 }
