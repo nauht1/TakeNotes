@@ -98,6 +98,9 @@ public class NoteServiceImpl implements INoteService {
     public String markNote(String id) {
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Note not found"));
+        if (!note.isActive()) {
+            throw new RuntimeException("Note is not active");
+        }
         note.setImportant(!note.isImportant());
         noteRepository.save(note);
         return "Success";
@@ -107,7 +110,7 @@ public class NoteServiceImpl implements INoteService {
     public List<NoteModel> getAllNotes() {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
-        List<Note> notes = noteRepository.findAllByUserIdAndActiveIsTrue(user.getId());
+        List<Note> notes = noteRepository.findAllByUserIdAndActiveIsTrueAndImportantIsFalse(user.getId());
         List<NoteModel> noteModels = new ArrayList<>();
         notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
         return noteModels;
@@ -123,6 +126,15 @@ public class NoteServiceImpl implements INoteService {
         return noteModels;
     }
 
+    @Override
+    public List<NoteModel> getALlNotesMarked() {
+        User user = SecurityUtils.getCurrentUser(userRepository);
+
+        List<Note> notes = noteRepository.findAllByUserIdAndImportantIsTrueAndActiveIsTrue(user.getId());
+        List<NoteModel> noteModels = new ArrayList<>();
+        notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
+        return noteModels;
+    }
 
     @Override
     public String deleteImage(String noteId, String imageUrl) {

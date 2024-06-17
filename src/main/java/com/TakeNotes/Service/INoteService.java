@@ -13,6 +13,7 @@ public interface INoteService {
     String markNote(String id);
     List<NoteModel> getAllNotes();
     List<NoteModel> getAllNotesInTrash();
+    List<NoteModel> getALlNotesMarked();
     String deleteImage(String noteId, String imageUrl);
     // Move to trash, or restore from trash
     String move(String noteId);
