@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class NoteServiceImpl implements INoteService {
@@ -185,5 +186,23 @@ public class NoteServiceImpl implements INoteService {
         }
         noteRepository.delete(note);
         return "Success";
+    }
+
+    @Override
+    public List<NoteModel> findNotesByTitleOrContent(String searchText, String type) {
+        User user = SecurityUtils.getCurrentUser(userRepository);
+
+        List<Note> notes;
+        if (Objects.equals(type, "HOME")) {
+             notes = noteRepository.findByUserIdAndTitleOrContentInHome(user.getId(), searchText);
+        }
+        else if (Objects.equals(type, "ARCHIVE")) {
+            notes = noteRepository.findByUserIdAndTitleOrContentInArchive(user.getId(), searchText);
+        }
+        else {
+            throw new RuntimeException("Note not found");
+        }
+
+        return notes.stream().map(note-> modelMapper.map(note, NoteModel.class)).toList();
     }
 }

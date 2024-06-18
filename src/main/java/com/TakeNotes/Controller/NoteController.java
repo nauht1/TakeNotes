@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -109,5 +110,18 @@ public class NoteController {
     @DeleteMapping("/delete")
     public ResponseEntity<String> deleteNote(@RequestParam(value = "id") String id) {
         return ResponseEntity.ok(noteService.deleteNote(id));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ResponseModel> searchNote(@RequestParam String searchText, @RequestParam String type) {
+        List<NoteModel> noteModels = new ArrayList<>();
+        try {
+            noteModels = noteService.findNotesByTitleOrContent(searchText, type);
+            return ResponseEntity.ok(new ResponseModel(true, "Success!!", noteModels));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(false, "Failed!", noteModels));
+        }
     }
 }
