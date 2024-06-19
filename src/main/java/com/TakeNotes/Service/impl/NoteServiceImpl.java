@@ -189,19 +189,18 @@ public class NoteServiceImpl implements INoteService {
     }
 
     @Override
-    public List<NoteModel> findNotesByTitleOrContent(String searchText, String type) {
+    public String deleteNullNote(String noteId) {
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new RuntimeException("Note not found"));
+        noteRepository.delete(note);
+        return "Success";
+    }
+
+    @Override
+    public List<NoteModel> findNotesByTitleOrContent(String searchText) {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
-        List<Note> notes;
-        if (Objects.equals(type, "HOME")) {
-             notes = noteRepository.findByUserIdAndTitleOrContentInHome(user.getId(), searchText);
-        }
-        else if (Objects.equals(type, "ARCHIVE")) {
-            notes = noteRepository.findByUserIdAndTitleOrContentInArchive(user.getId(), searchText);
-        }
-        else {
-            throw new RuntimeException("Note not found");
-        }
+        List<Note> notes = noteRepository.findByUserIdAndTitleOrContent(user.getId(), searchText);
 
         return notes.stream().map(note-> modelMapper.map(note, NoteModel.class)).toList();
     }

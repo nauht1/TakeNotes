@@ -12,11 +12,7 @@ public interface NoteRepository extends MongoRepository<Note, String> {
     List<Note> findAllByUserIdAndActiveIsTrueAndImportantIsFalse(String userId);
     List<Note> findAllByUserIdAndActiveIsFalse(String userId);
     List<Note> findAllByUserIdAndImportantIsTrueAndActiveIsTrue(String userId);
-    @Query("{ 'userId': ?0, 'active': true, 'important': false, " +
+    @Query("{ 'userId': ?0, 'active': true, " +
             "$or: [{'title': {$regex: ?1, $options: 'i'}}, {'content':  {$regex:  ?1, $options: 'i'}}] }")
-    List<Note> findByUserIdAndTitleOrContentInHome(String userId, String searchText);
-
-    @Query("{ 'userId': ?0, 'active': true, 'important': true, " +
-            "$or: [{'title': {$regex: ?1, $options: 'i'}}, {'content':  {$regex:  ?1, $options: 'i'}}] }")
-    List<Note> findByUserIdAndTitleOrContentInArchive(String userId, String searchText);
+    List<Note> findByUserIdAndTitleOrContent(String userId, String searchText);
 }

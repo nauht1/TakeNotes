@@ -19,5 +19,6 @@ public interface INoteService {
     String move(String noteId);
     // Delete note
     String deleteNote(String noteId);
-    List<NoteModel> findNotesByTitleOrContent(String key, String type);
+    String deleteNullNote(String noteId);
+    List<NoteModel> findNotesByTitleOrContent(String key);
 }

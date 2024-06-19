@@ -112,11 +112,16 @@ public class NoteController {
         return ResponseEntity.ok(noteService.deleteNote(id));
     }
 
+    @DeleteMapping("/deleteNullNote")
+    public ResponseEntity<String> deleteNullNote(@RequestParam(value = "id") String id) {
+        return ResponseEntity.ok(noteService.deleteNullNote(id));
+    }
+
     @GetMapping("/search")
-    public ResponseEntity<ResponseModel> searchNote(@RequestParam String searchText, @RequestParam String type) {
+    public ResponseEntity<ResponseModel> searchNote(@RequestParam String searchText) {
         List<NoteModel> noteModels = new ArrayList<>();
         try {
-            noteModels = noteService.findNotesByTitleOrContent(searchText, type);
+            noteModels = noteService.findNotesByTitleOrContent(searchText);
             return ResponseEntity.ok(new ResponseModel(true, "Success!!", noteModels));
         }
         catch (Exception e) {
