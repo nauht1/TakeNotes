@@ -5,13 +5,12 @@ import com.TakeNotes.Document.User;
 import com.TakeNotes.Enum.Role;
 import com.TakeNotes.Enum.TokenType;
 import com.TakeNotes.Exception.ResourcesAlreadyExistException;
-import com.TakeNotes.Model.AuthRequest;
-import com.TakeNotes.Model.AuthResponse;
-import com.TakeNotes.Model.RegisterDTO;
-import com.TakeNotes.Model.RegisterResponse;
+import com.TakeNotes.Model.*;
 import com.TakeNotes.Repository.TokenRepository;
 import com.TakeNotes.Repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.http.HttpHeaders;
@@ -22,9 +21,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Optional;
 
 @Service
@@ -46,6 +48,9 @@ public class AuthenticationService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private GoogleIdTokenVerifier verifier;
 
     public RegisterResponse register(RegisterDTO registerDTO) {
         // random 64bit verification code
@@ -108,6 +113,35 @@ public class AuthenticationService {
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    // Google login
+    public AuthResponse loginOAuthGoogle(GoogleLoginRequest requestBody) {
+        User user = verifyIDToken(requestBody.getTokenId());
+        if (user == null) {
+            throw new IllegalArgumentException();
+        }
+        user = createOrUpdateUser(user);
+        var jwtToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+        return AuthResponse.builder()
+                .accessToken(jwtToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    @Transactional
+    public User createOrUpdateUser(User user) {
+        User existingAccount = userRepository.findByEmail(user.getEmail()).orElse(null);
+        if (existingAccount == null) {
+            user.setRole(Role.USER);
+            userRepository.save(user);
+            return user;
+        }
+        existingAccount.setFullName(user.getFullName());
+        existingAccount.setAvatar_url(user.getAvatar_url());
+        userRepository.save(existingAccount);
+        return existingAccount;
     }
 
     // Save new token
@@ -173,5 +207,23 @@ public class AuthenticationService {
         user.setVerificationCode(null);
         userRepository.save(user);
         return "Verification successful";
+    }
+
+    private User verifyIDToken(String idToken) {
+        try {
+            GoogleIdToken idTokenObj = verifier.verify(idToken);
+            if (idTokenObj == null) {
+                return null;
+            }
+            GoogleIdToken.Payload payload = idTokenObj.getPayload();
+            String firstName = (String) payload.get("given_name");
+            String lastName = (String) payload.get("family_name");
+            String email = payload.getEmail();
+            String pictureUrl = (String) payload.get("picture");
+
+            return new User(email, firstName + lastName, pictureUrl);
+        } catch (GeneralSecurityException | IOException e) {
+            return null;
+        }
     }
 }

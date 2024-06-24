@@ -1,13 +1,13 @@
 package com.TakeNotes.Controller;
 
-import com.TakeNotes.Model.AuthRequest;
-import com.TakeNotes.Model.AuthResponse;
-import com.TakeNotes.Model.RegisterDTO;
-import com.TakeNotes.Model.RegisterResponse;
+import com.TakeNotes.Model.*;
 import com.TakeNotes.Service.impl.AuthenticationService;
+import com.TakeNotes.Service.impl.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +18,8 @@ import java.io.IOException;
 public class AuthenticationController {
     @Autowired
     private AuthenticationService authenticationService;
+    @Autowired
+    private JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> register(@RequestBody RegisterDTO registerDTO) {
@@ -27,6 +29,11 @@ public class AuthenticationController {
     @PostMapping("/authenticate")
     public ResponseEntity<AuthResponse> authenticate(@RequestBody AuthRequest authRequest) {
         return ResponseEntity.ok(authenticationService.authenticate(authRequest));
+    }
+
+    @PostMapping("/oauth2/login")
+    public ResponseEntity<AuthResponse> loginWithGoogleOauth2(@RequestBody GoogleLoginRequest requestBody) {
+        return ResponseEntity.ok(authenticationService.loginOAuthGoogle(requestBody));
     }
 
     @PostMapping("/refresh-token")
