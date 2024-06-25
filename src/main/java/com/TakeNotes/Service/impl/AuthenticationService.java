@@ -121,26 +121,38 @@ public class AuthenticationService {
         if (user == null) {
             throw new IllegalArgumentException();
         }
-        user = createOrUpdateUser(user);
+        user = createOauth2User(user);
+        System.out.println("USER IDENTIFIED: " + user);
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
+
+        revokeAllUserTokens(user);
+        saveUserToken(user, jwtToken);
+
         return AuthResponse.builder()
                 .accessToken(jwtToken)
                 .refreshToken(refreshToken)
                 .build();
     }
 
+    // Only use for Google oauth2
     @Transactional
-    public User createOrUpdateUser(User user) {
+    public User createOauth2User(User user) {
         User existingAccount = userRepository.findByEmail(user.getEmail()).orElse(null);
         if (existingAccount == null) {
+            user.setEmail(user.getEmail());
+            user.setFullName(user.getFullName());
             user.setRole(Role.USER);
+            user.setVerificationCode(null);
+            user.setCreated(LocalDateTime.now());
+            user.setEnabled(true);
             userRepository.save(user);
+
+            // Send welcome email when it was the first login
+            emailService.sendWelcomeMessage(user.getEmail(), user.getFullName());
+
             return user;
         }
-        existingAccount.setFullName(user.getFullName());
-        existingAccount.setAvatar_url(user.getAvatar_url());
-        userRepository.save(existingAccount);
         return existingAccount;
     }
 
@@ -206,6 +218,10 @@ public class AuthenticationService {
         user.setEnabled(true);
         user.setVerificationCode(null);
         userRepository.save(user);
+
+        // Send welcome email
+        emailService.sendWelcomeMessage(user.getEmail(), user.getFullName());
+
         return "Verification successful";
     }
 
@@ -219,9 +235,8 @@ public class AuthenticationService {
             String firstName = (String) payload.get("given_name");
             String lastName = (String) payload.get("family_name");
             String email = payload.getEmail();
-            String pictureUrl = (String) payload.get("picture");
 
-            return new User(email, firstName + lastName, pictureUrl);
+            return new User(email, firstName + " " + lastName);
         } catch (GeneralSecurityException | IOException e) {
             return null;
         }

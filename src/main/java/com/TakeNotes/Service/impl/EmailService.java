@@ -52,9 +52,20 @@ public class EmailService {
         Context context = new Context();
         context.setVariable("verificationUrl", verificationUrl);
 
-        String htmlContent = templateEngine.process("email/email", context);
+        String htmlContent = templateEngine.process("email/verification", context);
 
         sendMail(email, subject, htmlContent);
     }
 
+    // New method to send welcome message
+    public void sendWelcomeMessage(String email, String fullName) {
+        String subject = "Welcome to TakeNotes";
+
+        Context context = new Context();
+        context.setVariable("fullName", fullName);
+
+        String htmlContent = templateEngine.process("email/welcome", context);
+
+        sendMail(email, subject, htmlContent);
+    }
 }

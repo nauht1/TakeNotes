@@ -45,10 +45,9 @@ public class User implements UserDetails {
         this.role = role;
         this.created = LocalDateTime.now();
     }
-    public User(String email, String fullName, String avatar_url) {
+    public User(String email, String fullName) {
         this.email = email;
         this.fullName = fullName;
-        this.avatar_url = avatar_url;
     }
 
     @Override
