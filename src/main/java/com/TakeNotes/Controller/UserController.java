@@ -4,6 +4,8 @@ import com.TakeNotes.Model.ProfileModel;
 import com.TakeNotes.Model.ResponseModel;
 import com.TakeNotes.Service.IUserService;
 import com.TakeNotes.Service.impl.UserServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ public class UserController {
     private IUserService userService = new UserServiceImpl();
 
     @GetMapping("/profile")
+    @Operation(summary = "get auth user profile", security = {@SecurityRequirement(name = "bearerAuth")})
     public ResponseEntity<ResponseModel> getProfile() {
         try {
             ProfileModel profile = userService.getProfile();
@@ -29,6 +32,7 @@ public class UserController {
     }
 
     @PutMapping("/profile/edit")
+    @Operation(summary = "edit user profile", security = {@SecurityRequirement(name = "bearerAuth")})
     public ResponseEntity<ResponseModel> updateProfile(@ModelAttribute ProfileModel profile,
                                                        @RequestParam(value = "imageFile",
                                                                required = false) MultipartFile imageFile) {
