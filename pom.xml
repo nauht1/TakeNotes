@@ -14,7 +14,7 @@
 	<name>TakeNotes</name>
 	<description>Take note of something :&quot;)</description>
 	<properties>
-		<java.version>20</java.version>
+		<java.version>21</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
