@@ -9,9 +9,12 @@ import com.TakeNotes.Repository.NoteRepository;
 import com.TakeNotes.Repository.UserRepository;
 import com.TakeNotes.Service.IFirebaseService;
 import com.TakeNotes.Service.INoteService;
+import com.TakeNotes.Utils.EncryptionUtils;
 import com.TakeNotes.Utils.SecurityUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,7 +26,8 @@ import java.util.Objects;
 
 @Service
 public class NoteServiceImpl implements INoteService {
-
+    @Autowired
+    private Environment env;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -36,6 +40,9 @@ public class NoteServiceImpl implements INoteService {
 
     @Autowired
     private UserRepository userRepository;
+
+    private static final String secret_key = System.getenv("AES_CONTENT_ENCRYPTION_KEY");
+    private final EncryptionUtils encryptionUtils = new EncryptionUtils(secret_key);
 
     @Override
     public NoteModel createNote(CreateNoteDTO noteDTO, List<MultipartFile> images) throws IOException {
@@ -55,11 +62,37 @@ public class NoteServiceImpl implements INoteService {
         note.setCreated(LocalDateTime.now());
         note.setActive(true);
 
-        return modelMapper.map(noteRepository.save(note), NoteModel.class);
+        // Copy title and content before encryption
+        String originalTitle = note.getTitle();
+        String originalContent = note.getContent();
+
+
+        // Encrypt data before save
+        try {
+            note.setTitle(encryptionUtils.encrypt(note.getTitle()));
+            note.setContent(encryptionUtils.encrypt(note.getContent()));
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating note ", e);
+        }
+
+        noteRepository.save(note);
+
+        Note originalNote = new Note(
+                note.getId(),
+                note.getUserId(),
+                originalTitle,
+                originalContent,
+                note.getImage_urls(),
+                note.isImportant(),
+                note.getCreated(),
+                note.isActive()
+        );
+
+        return modelMapper.map(originalNote, NoteModel.class);
     }
 
     @Override
-    public NoteModel updateNote(String id, NoteModel noteDTO, List<MultipartFile> images) throws IOException {
+    public NoteModel updateNote(String id, NoteModel noteDTO, List<MultipartFile> images) throws Exception {
         User user = SecurityUtils.getCurrentUser(userRepository);
         Note note;
 
@@ -71,12 +104,23 @@ public class NoteServiceImpl implements INoteService {
                     orElseThrow(() -> new RuntimeException("Note not found"));
         }
 
+        String originalTitle = note.getTitle();
+        String originalContent = note.getContent();
+
         if (noteDTO.getTitle() != null) {
-            note.setTitle(noteDTO.getTitle());
+            try {
+                note.setTitle(encryptionUtils.encrypt(noteDTO.getTitle()));
+            } catch (Exception e) {
+                throw new RuntimeException("Error encrypting title ", e);
+            }
         }
 
         if (noteDTO.getContent() != null) {
-            note.setContent(noteDTO.getContent());
+            try {
+                note.setContent(encryptionUtils.encrypt(noteDTO.getContent()));
+            } catch (Exception e) {
+                throw new RuntimeException("Error encrypting content ", e);
+            }
         }
 
         List<String> currentImageUrls = note.getImage_urls();
@@ -93,7 +137,21 @@ public class NoteServiceImpl implements INoteService {
         }
         note.setCreated(LocalDateTime.now());
         note.setActive(true);
-        return modelMapper.map(noteRepository.save(note), NoteModel.class);
+
+        noteRepository.save(note);
+
+        Note originalNote = new Note(
+                note.getId(),
+                note.getUserId(),
+                originalTitle,
+                originalContent,
+                note.getImage_urls(),
+                note.isImportant(),
+                note.getCreated(),
+                note.isActive()
+        );
+
+        return modelMapper.map(originalNote, NoteModel.class);
     }
 
     @Override
@@ -108,14 +166,26 @@ public class NoteServiceImpl implements INoteService {
         return "Success";
     }
 
+    private List<NoteModel> getDecryptedNotes(List<Note> notes) {
+        List<NoteModel> noteModels = new ArrayList<>();
+        notes.forEach(note -> {
+            try {
+                note.setTitle(encryptionUtils.decrypt(note.getTitle()));
+                note.setContent(encryptionUtils.decrypt(note.getContent()));
+            } catch (Exception e) {
+                throw new RuntimeException("Error decrypting note", e);
+            }
+            noteModels.add(modelMapper.map(note, NoteModel.class));
+        });
+        return noteModels;
+    }
+
     @Override
     public List<NoteModel> getAllNotes() {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
         List<Note> notes = noteRepository.findAllByUserIdAndActiveIsTrueAndImportantIsFalse(user.getId());
-        List<NoteModel> noteModels = new ArrayList<>();
-        notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
-        return noteModels;
+        return getDecryptedNotes(notes);
     }
 
     @Override
@@ -123,9 +193,7 @@ public class NoteServiceImpl implements INoteService {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
         List<Note> notes = noteRepository.findAllByUserIdAndActiveIsFalse(user.getId());
-        List<NoteModel> noteModels = new ArrayList<>();
-        notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
-        return noteModels;
+        return getDecryptedNotes(notes);
     }
 
     @Override
@@ -133,9 +201,7 @@ public class NoteServiceImpl implements INoteService {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
         List<Note> notes = noteRepository.findAllByUserIdAndImportantIsTrueAndActiveIsTrue(user.getId());
-        List<NoteModel> noteModels = new ArrayList<>();
-        notes.forEach(note -> noteModels.add(modelMapper.map(note, NoteModel.class)));
-        return noteModels;
+        return getDecryptedNotes(notes);
     }
 
     @Override
@@ -212,7 +278,6 @@ public class NoteServiceImpl implements INoteService {
         User user = SecurityUtils.getCurrentUser(userRepository);
 
         List<Note> notes = noteRepository.findByUserIdAndTitleOrContent(user.getId(), searchText);
-
-        return notes.stream().map(note-> modelMapper.map(note, NoteModel.class)).toList();
+        return getDecryptedNotes(notes);
     }
 }

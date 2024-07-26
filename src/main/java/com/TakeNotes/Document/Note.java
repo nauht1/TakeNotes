@@ -36,4 +36,15 @@ public class Note {
         this.created = created;
         this.deletedAt = deletedAt;
     }
+
+    public Note(String id, String userId, String title, String content, List<String> image_urls, boolean important, LocalDateTime created, boolean active) {
+        this.id = id;
+        this.userId = userId;
+        this.title = title;
+        this.content = content;
+        this.image_urls = image_urls;
+        this.important = important;
+        this.created = created;
+        this.active = active;
+    }
 }
