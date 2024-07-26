@@ -24,6 +24,7 @@ import java.util.Objects;
 @Service
 public class NoteServiceImpl implements INoteService {
 
+
     @Autowired
     private ModelMapper modelMapper;
 
@@ -163,7 +164,17 @@ public class NoteServiceImpl implements INoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new RuntimeException("Note not found"));
 
-        note.setActive(!note.isActive());
+        boolean isActive = note.isActive();
+        note.setActive(!isActive);
+
+        // isActive is TRUE meaning notes will be deleted when calling this method.
+        if (isActive) {
+            note.setDeletedAt(LocalDateTime.now());
+        }
+        else {
+            note.setDeletedAt(null);
+        }
+
         noteRepository.save(note);
         return "Success";
     }

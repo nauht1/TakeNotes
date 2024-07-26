@@ -3,9 +3,11 @@ package com.TakeNotes.Document;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,13 +25,15 @@ public class Note {
     private boolean important;
     private LocalDateTime created;
     private boolean active;
+    private LocalDateTime deletedAt;
 
-    public Note(String userId, String title, String content, List<String> image_urls, boolean important, LocalDateTime created) {
+    public Note(String userId, String title, String content, List<String> image_urls, boolean important, LocalDateTime created, LocalDateTime deletedAt) {
         this.userId = userId;
         this.title = title;
         this.content = content;
         this.image_urls = image_urls;
         this.important = important;
         this.created = created;
+        this.deletedAt = deletedAt;
     }
 }
