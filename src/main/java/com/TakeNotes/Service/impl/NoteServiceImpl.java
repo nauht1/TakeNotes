@@ -67,10 +67,14 @@ public class NoteServiceImpl implements INoteService {
         String originalContent = note.getContent();
 
 
-        // Encrypt data before save
+        // Encrypt data before save if not empty
         try {
-            note.setTitle(encryptionUtils.encrypt(note.getTitle()));
-            note.setContent(encryptionUtils.encrypt(note.getContent()));
+            if (originalTitle != null && !originalTitle.trim().isEmpty()) {
+                note.setTitle(encryptionUtils.encrypt(originalTitle));
+            }
+            if (originalContent != null && !originalContent.trim().isEmpty()) {
+                note.setContent(encryptionUtils.encrypt(originalContent));
+            }
         } catch (Exception e) {
             throw new RuntimeException("Error creating note ", e);
         }
@@ -104,20 +108,23 @@ public class NoteServiceImpl implements INoteService {
                     orElseThrow(() -> new RuntimeException("Note not found"));
         }
 
-        String originalTitle = note.getTitle();
-        String originalContent = note.getContent();
+        String updatedTitle = "", updatedContent = "";
 
-        if (noteDTO.getTitle() != null) {
+        if (noteDTO.getTitle() != null && !noteDTO.getTitle().trim().isEmpty()) {
             try {
-                note.setTitle(encryptionUtils.encrypt(noteDTO.getTitle()));
+                // track new title before enc
+                updatedTitle = noteDTO.getTitle();
+                note.setTitle(encryptionUtils.encrypt(updatedTitle));
             } catch (Exception e) {
                 throw new RuntimeException("Error encrypting title ", e);
             }
         }
 
-        if (noteDTO.getContent() != null) {
+        if (noteDTO.getContent() != null && !noteDTO.getContent().trim().isEmpty()) {
             try {
-                note.setContent(encryptionUtils.encrypt(noteDTO.getContent()));
+                // track new content before enc
+                updatedContent = noteDTO.getContent();
+                note.setContent(encryptionUtils.encrypt(updatedContent));
             } catch (Exception e) {
                 throw new RuntimeException("Error encrypting content ", e);
             }
@@ -143,8 +150,8 @@ public class NoteServiceImpl implements INoteService {
         Note originalNote = new Note(
                 note.getId(),
                 note.getUserId(),
-                originalTitle,
-                originalContent,
+                updatedTitle,
+                updatedContent,
                 note.getImage_urls(),
                 note.isImportant(),
                 note.getCreated(),
@@ -170,8 +177,12 @@ public class NoteServiceImpl implements INoteService {
         List<NoteModel> noteModels = new ArrayList<>();
         notes.forEach(note -> {
             try {
-                note.setTitle(encryptionUtils.decrypt(note.getTitle()));
-                note.setContent(encryptionUtils.decrypt(note.getContent()));
+                if (note.getTitle() != null && !note.getTitle().trim().isEmpty()) {
+                    note.setTitle(encryptionUtils.decrypt(note.getTitle()));
+                }
+                if (note.getContent() != null && !note.getContent().trim().isEmpty()) {
+                    note.setContent(encryptionUtils.decrypt(note.getContent()));
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Error decrypting note", e);
             }
